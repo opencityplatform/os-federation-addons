@@ -1,0 +1,114 @@
+{% comment %}
+  Copyright (c) 2014 INFN - "Istituto Nazionale di Fisica Nucleare" - Italy
+  All Rights Reserved.
+
+  Licensed under the Apache License, Version 2.0 (the "License"); you may
+  not use this file except in compliance with the License. You may obtain
+  a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  License for the specific language governing permissions and limitations
+  under the License. 
+{% endcomment %}
+
+{% load i18n %}
+{% load url from future %}
+
+<div id="login_frame1_id" class="login {% if hide %}modal hide{% endif %}">
+    <div class="modal-header">
+        {% if hide %}<a href="#" class="close" data-dismiss="modal">&times;</a>{% endif %}
+        <h3>{% trans "Log In" %}</h3>
+    </div>
+  
+    <form id="form1_id" autocomplete="{{ HORIZON_CONFIG.password_autocomplete }}"
+          class="" action="{% url 'login' %}" method="POST">
+        {% csrf_token %}
+
+        <fieldset>
+
+        <div class="modal-body">
+    
+            <button type="button" 
+                    onclick="location.href='/Shibboleth.sso/Login?entityID=https%3A%2F%2Fidp.infn.it%2Ftesting%2Fsaml2%2Fidp%2Fmetadata.php&target=https%3A%2F%2F{{ request.META.SERVER_NAME }}%3A5000%2Fv3%2FOS-FEDERATION%2Fidentity_providers%2Finfn%2Fprotocols%2Fsaml2%2Fauth%3Freturn%3Dhttps%253A%252F%252F{{ request.META.SERVER_NAME }}%253A{{ request.META.SERVER_PORT }}%252Fdashboard%252Fauth%252Fauthtoken%252F';">
+                <img align="middle" height="60px" width="80px" alt="Login Infn AAI" src="/static/dashboard/img/logoInfnAAI.png">
+            </button>
+                  
+            <button type="button" 
+                    onclick="document.getElementById('userandpwddiv').style.display='block';">
+                <img align="middle" height="60px" width="80px" alt="Local login" src="/static/dashboard/img/logoUsrPwd.png">
+            </button>
+
+        </div>
+    
+        <hr />
+  
+        <div class="modal-body clearfix">
+        
+            <noscript>
+                <div class="control-group clearfix error">
+                    <span class="help-inline">
+                        <p>{% trans "Javascript is disabled; this site requires javascript" %}</p>
+                    </span>
+                </div>
+            </noscript>
+        
+            {% if request.user.is_authenticated and 'next' in request.GET %}
+            <div class="control-group clearfix error">
+                <span class="help-inline">
+                    <p>{% trans "You don't have permissions to access:" %}</p>
+                    <p><b>{{ request.GET.next }}</b></p>
+                    <p>{% trans "Login as different user or go back to" %}
+                    <a href="{% url 'horizon:user_home' %}">{% trans "home page" %}</a></p>
+                </span>
+            </div>
+            {% endif  %}
+       
+            {% if request.COOKIES.logout_reason %}
+            <div class="control-group clearfix error">
+                <span class="help-inline"><p>{{ request.COOKIES.logout_reason }}</p></span>
+            </div>
+            {% endif %}
+       
+            {% if next %}<input type="hidden" name="{{ redirect_field_name }}" value="{{ next }}" />{% endif %}
+        </div>
+    
+        <div class="modal-footer">
+        </div>
+    
+        {% if form.non_field_errors %}
+        <div id="userandpwddiv" style="display: block;">
+        {% else %}
+        <div id="userandpwddiv" style="display: none;">
+        {% endif %}
+        
+            <div class="modal hide in" style="top: 80px; display: block;">
+                <div class="modal-header"><h3>{% trans "Local account" %}</h3></div>
+                
+                <div class="modal-body clearfix">
+                    {% include "horizon/common/_form_fields.html" %}
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary pull-right">{% trans "Sign In" %}</button>
+                    <button type="button"
+                            onclick="location.href='/dashboard/auth/register/'"
+                            class="btn btn-primary pull-right">{% trans "Register" %}</button>
+                    <button type="button"
+                            onclick="document.getElementById('userandpwddiv').style.display='none';"
+                            class="btn btn-primary pull-right">{% trans "Cancel" %}</button>
+                </div>
+            </div>
+  
+            <div class="modal-backdrop in"></div>
+            
+        </div>
+  
+    </fieldset>
+  </form>
+  
+</div>
+
