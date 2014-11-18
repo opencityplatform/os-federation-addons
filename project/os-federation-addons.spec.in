@@ -1,0 +1,112 @@
+Summary: Add-ons for OS-Federation support
+Name: os-federation-addons
+Version: @PKGVERSION@
+Release: @PKGRELEASE@%{?dist}
+License: Apache Software License
+Vendor: EMI
+URL: http://wiki.infn.it/progetti/cloud-areapd/home
+Group: Applications/Internet
+BuildArch: noarch
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+AutoReqProv: yes
+Source: %{name}.tar.gz
+
+
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
+%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%endif
+
+%description
+Add-ons for OS-Federation support
+
+%prep
+
+%setup -c -q
+
+%build
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}
+python setup.py install -O1 --prefix %{buildroot}/usr --install-data %{buildroot}
+rm %{buildroot}%{python_sitelib}/*.egg-info
+
+%clean
+rm -rf %{buildroot}
+
+
+
+
+
+%package -n openstack-auth-fedext
+Summary: Django plugin for OS-Federation support
+Group: System Environment/Libraries
+Requires: python-django-openstack-auth
+Requires: python-keystoneclient
+Requires: openstack-dashboard
+
+%description -n openstack-auth-fedext
+Django plugin for OS-Federation support
+
+%files -n openstack-auth-fedext
+%defattr(-,root,root)
+%dir %{python_sitelib}/openstack_auth_fedext
+%{python_sitelib}/openstack_auth_fedext/*.py
+%{python_sitelib}/openstack_auth_fedext/*.pyc
+%{python_sitelib}/openstack_auth_fedext/*.pyo
+/usr/share/openstack-dashboard/openstack_dashboard/templates/auth/*.html
+/usr/share/openstack-dashboard/static/dashboard/img/*.png
+
+
+
+
+%triggerin -n openstack-auth-fedext -- openstack-dashboard
+if [ ! $1 == 2 ]; then
+    #
+    # Register the new backend driver
+    #
+    sed -i -e 's|openstack_auth.backend.KeystoneBackend|openstack_auth_fedext.backend.ExtKeystoneBackend|g' \
+    /usr/share/openstack-dashboard/openstack_dashboard/settings.py
+    #
+    # Register the views wrapper
+    #
+    sed -i -e 's|openstack_auth.urls|openstack_auth_fedext.urls|g' \
+        /usr/share/openstack-dashboard/openstack_dashboard/urls.py
+    #
+    # Register as an installed application
+    #
+    sed -i -e "s|openstack_auth[\']|openstack_auth_fedext\'|g" \
+        /usr/share/openstack-dashboard/openstack_dashboard/settings.py
+fi
+
+%triggerun -n openstack-auth-fedext -- openstack-dashboard
+if [ $1 == 0 -o $2 == 0 ] ; then
+    sed -i -e 's|openstack_auth_fedext.backend.ExtKeystoneBackend|openstack_auth.backend.KeystoneBackend|g' \
+        /usr/share/openstack-dashboard/openstack_dashboard/settings.py
+    sed -i -e 's|openstack_auth_fedext.urls|openstack_auth.urls|g' \
+    /usr/share/openstack-dashboard/openstack_dashboard/urls.py
+    sed -i -e "s|openstack_auth_fedext[\']|openstack_auth\'|g" \
+        /usr/share/openstack-dashboard/openstack_dashboard/settings.py
+fi
+
+
+%package -n keystone-middleware-fedext
+Summary: Keystone filter for OS-Federation support
+Group: System Environment/Libraries
+Requires: python-keystone
+
+%description -n keystone-middleware-fedext
+Keystone filter for OS-Federation support
+
+%files -n keystone-middleware-fedext
+%defattr(-,root,root)
+%dir %{python_sitelib}/keystone_middleware_fedext
+%{python_sitelib}/keystone_middleware_fedext/*.py
+%{python_sitelib}/keystone_middleware_fedext/*.pyc
+%{python_sitelib}/keystone_middleware_fedext/*.pyo
+
+%changelog
+* Tue Nov 18 2014 Cloud Area Padovana <cloud-support@lists.pd.infn.it> - @PKGVERSION@-@PKGRELEASE@
+- New major release
+
