@@ -21,21 +21,24 @@ from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
-#
-# TODO missing auto-post
-#
 html_template = '''<html>
   <head>
     <meta content='text/html; charset=utf-8' http-equiv='Content-Type' />
     <title>Redirect for %(user)s</title>
   </head>
-  <body>
-    <form method="POST" action="%(url)s">
+  <body onload="document.forms[0].submit()">
+    <noscript>
       <p>
-         <label>Token</label>
-         <textarea rows="10" cols="80" name="token">%(token)s</textarea>
-      </p>
-      <p><input type="submit">Send</input></p>
+        <strong>Note:</strong> Since your browser does not support JavaScript,
+        you must press the Continue button once to proceed.
+     </p>
+    </noscript>
+    
+    <form method="POST" action="%(url)s">
+      <input type="hidden" name="token" value="%(token)s"/>
+      <noscript>
+        <div><input type="submit" value="Continue"/></div>
+      </noscript>
     </form>
   </body>
 </html>
