@@ -14,6 +14,8 @@
 #  under the License. 
 
 import logging
+import urlparse
+import urllib
 
 from django import shortcuts
 from django.conf import settings
@@ -25,6 +27,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators import vary
 
 from openstack_auth.views import login as basic_login
 from openstack_auth.views import logout as basic_logout
@@ -34,6 +37,7 @@ from openstack_auth.user import set_session_from_user
 from openstack_auth.user import create_user_from_token
 from openstack_auth.user import Token
 from openstack_auth.exceptions import KeystoneAuthException
+from openstack_auth.forms import Login as login_form 
 from .backend import ExtClient
 
 try:
@@ -43,7 +47,7 @@ except ImportError:
 
 from openstack_auth.views import delete_token
 
-from horizon import forms
+from horizon import forms, get_user_home
 
 from .forms import TokenForm
 
@@ -72,6 +76,9 @@ def logout(request):
             delete_token(endpoint=endpoint, token_id=token.id)
 
         auth_logout(request)
+        #
+        # TODO this is a local shibboleth logout
+        #
         logout_url = '/Shibboleth.sso/Logout?return=https://%s:%s/dashboard' % \
             (request.META['SERVER_NAME'], request.META['SERVER_PORT'])
         response = shortcuts.redirect(logout_url)
@@ -159,5 +166,52 @@ def authtoken(request):
     response = shortcuts.redirect('/dashboard')
     response.set_cookie('logout_reason', 'User invalid or not authenticated')
     return response
+
+def get_fedkeystone_url():
+    fed_keystone_url = getattr(settings, 'OPENSTACK_FED_KEYSTONE_URL', None)
+    if not fed_keystone_url:
+        tmptpl = urlparse.urlparse(settings.OPENSTACK_KEYSTONE_URL)
+        fed_keystone_url = "%s://%s" % (tmptpl.scheme, tmptpl.hostname)
+    return fed_keystone_url
+
+@vary.vary_on_cookie
+def splash(request):
+
+    if request.user.is_authenticated():
+        return shortcuts.redirect(get_user_home(request.user))
+        
+    form = login_form(request)
+    request.session.clear()
+    request.session.set_test_cookie()
+    
+    fed_keystone_url = get_fedkeystone_url()
+    tmplist = list()
+    for item in settings.HORIZON_CONFIG.get('identity_providers', []):
+        #
+        # TODO check idp list well-formedness
+        #
+        return_query = urllib.urlencode({
+            'return' : 'https://%s:%s/dashboard/auth/authtoken/' % \
+            (request.META['SERVER_NAME'], request.META['SERVER_PORT'])
+        })
+        target = '%s/OS-FEDERATION/identity_providers/%s/protocols/%s/auth?%s' % \
+            (
+                settings.OPENSTACK_KEYSTONE_URL, 
+                item['idpId'], 
+                item['protocolId'],
+                return_query
+            )
+        tmpquery = urllib.urlencode({
+            'entityID' : item['entityId'],
+            'target' : target
+        })
+
+        tmplist.append({
+            'path' : "%s/Shibboleth.sso/Login?%s" % (fed_keystone_url, tmpquery),
+            'description' : item['description'],
+            'logo' : item['logo']
+        })
+    
+    return shortcuts.render(request, 'splash.html', {'form': form, 'idplist' : tmplist})
 
 

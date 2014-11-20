@@ -69,8 +69,10 @@ if [ ! $1 == 2 ]; then
     sed -i -e 's|openstack_auth.backend.KeystoneBackend|openstack_auth_fedext.backend.ExtKeystoneBackend|g' \
     /usr/share/openstack-dashboard/openstack_dashboard/settings.py
     #
-    # Register the views wrapper
+    # Register the views wrappers
     #
+    sed -i -e 's|openstack_dashboard.views.splash|openstack_auth_fedext.views.splash|g' \
+        /usr/share/openstack-dashboard/openstack_dashboard/urls.py
     sed -i -e 's|openstack_auth.urls|openstack_auth_fedext.urls|g' \
         /usr/share/openstack-dashboard/openstack_dashboard/urls.py
     #
@@ -85,6 +87,8 @@ if [ $1 == 0 -o $2 == 0 ] ; then
     sed -i -e 's|openstack_auth_fedext.backend.ExtKeystoneBackend|openstack_auth.backend.KeystoneBackend|g' \
         /usr/share/openstack-dashboard/openstack_dashboard/settings.py
     sed -i -e 's|openstack_auth_fedext.urls|openstack_auth.urls|g' \
+    /usr/share/openstack-dashboard/openstack_dashboard/urls.py
+    sed -i -e 's|openstack_auth_fedext.views.splash|openstack_dashboard.views.splash|g' \
     /usr/share/openstack-dashboard/openstack_dashboard/urls.py
     sed -i -e "s|openstack_auth_fedext[\']|openstack_auth\'|g" \
         /usr/share/openstack-dashboard/openstack_dashboard/settings.py

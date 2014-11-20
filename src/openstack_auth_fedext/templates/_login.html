@@ -32,11 +32,14 @@
 
         <div class="modal-body">
     
-            <button type="button" 
-                    onclick="location.href='/Shibboleth.sso/Login?entityID=https%3A%2F%2Fidp.infn.it%2Ftesting%2Fsaml2%2Fidp%2Fmetadata.php&target=https%3A%2F%2F{{ request.META.SERVER_NAME }}%3A5000%2Fv3%2FOS-FEDERATION%2Fidentity_providers%2Finfn%2Fprotocols%2Fsaml2%2Fauth%3Freturn%3Dhttps%253A%252F%252F{{ request.META.SERVER_NAME }}%253A{{ request.META.SERVER_PORT }}%252Fdashboard%252Fauth%252Fauthtoken%252F';">
-                <img align="middle" height="60px" width="80px" alt="Login Infn AAI" src="/static/dashboard/img/logoInfnAAI.png">
+            {% for idpdata in idplist %}
+            <button type="button" onclick="location.href='{{ idpdata.path }}';">
+                <img align="middle" height="60px" width="80px" 
+                     alt="Login {{ idpdata.description }}" 
+                     src="{{ idpdata.logo }}"/>
             </button>
-                  
+            {% endfor %}
+            
             <button type="button" 
                     onclick="document.getElementById('userandpwddiv').style.display='block';">
                 <img align="middle" height="60px" width="80px" alt="Local login" src="/static/dashboard/img/logoUsrPwd.png">
