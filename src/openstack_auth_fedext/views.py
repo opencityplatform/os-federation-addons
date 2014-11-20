@@ -76,11 +76,12 @@ def logout(request):
             delete_token(endpoint=endpoint, token_id=token.id)
 
         auth_logout(request)
-        #
-        # TODO this is a local shibboleth logout
-        #
-        logout_url = '/Shibboleth.sso/Logout?return=https://%s:%s/dashboard' % \
-            (request.META['SERVER_NAME'], request.META['SERVER_PORT'])
+        logout_url = '%s/Shibboleth.sso/Logout?return=https://%s:%s/dashboard' % \
+            (
+                get_fedkeystone_url(),
+                request.META['SERVER_NAME'],
+                request.META['SERVER_PORT']
+            )
         response = shortcuts.redirect(logout_url)
     else:
         response = basic_logout(request)
