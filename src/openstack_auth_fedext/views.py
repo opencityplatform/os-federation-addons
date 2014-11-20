@@ -147,11 +147,7 @@ def authtoken(request):
                     region_name = regions.get(region)
                     request.session['region_endpoint'] = region
                     request.session['region_name'] = region_name
-                    
-                    #
-                    # TODO protocol SAML2 hard-coded
-                    #
-                    request.session['os_federation_proto'] = "SAML2"
+                    request.session['os_federation_proto'] = auth_form.cleaned_data['proto']
                     
                     return shortcuts.redirect('/dashboard/project')
                 

@@ -36,6 +36,7 @@ html_template = '''<html>
     
     <form method="POST" action="%(url)s">
       <input type="hidden" name="pcode" value="%(pcode)d"/>
+      <input type="hidden" name="proto" value="%(proto)s"/>
       <input type="hidden" name="token" value="%(token)s"/>
       <noscript>
         <div><input type="submit" value="Continue"/></div>
@@ -63,6 +64,10 @@ class TokenWrapperMiddleware(wsgi.Middleware):
                 response.text = html_template % {
                     'url' : querystr['return'], 
                     'pcode' : 0,
+                    #
+                    # TODO protocol hard-coded
+                    #
+                    'proto' : 'SAML2',
                     'token' : res_headers['X-Subject-Token'],
                     'user' : request.environ.get('REMOTE_USER', 'Unknown')
                 }
@@ -71,6 +76,7 @@ class TokenWrapperMiddleware(wsgi.Middleware):
                 response.text = html_template % {
                     'url' : querystr['return'], 
                     'pcode' : 1,
+                    'proto' : '',
                     'token' : '',
                     'user' : request.environ.get('REMOTE_USER', 'Unknown')
                 }
