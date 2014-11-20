@@ -26,8 +26,7 @@ class TokenForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(TokenForm, self).__init__(*args, **kwargs)
 
-        self.fields['token'] = forms.CharField(
-            label=_('Token'),
-        )
+        self.fields['token'] = forms.CharField(label=_('Token'))
+        self.fields['pcode'] = forms.IntegerField(label=_('Process Code'))
 
 

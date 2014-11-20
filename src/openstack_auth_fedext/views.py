@@ -33,6 +33,7 @@ from openstack_auth.views import switch_region as basic_switch_region
 from openstack_auth.user import set_session_from_user
 from openstack_auth.user import create_user_from_token
 from openstack_auth.user import Token
+from openstack_auth.exceptions import KeystoneAuthException
 from .backend import ExtClient
 
 try:
@@ -73,9 +74,12 @@ def logout(request):
         auth_logout(request)
         logout_url = '/Shibboleth.sso/Logout?return=https://%s:%s/dashboard' % \
             (request.META['SERVER_NAME'], request.META['SERVER_PORT'])
-        return shortcuts.redirect(logout_url)
-        
-    return basic_logout(request)
+        response = shortcuts.redirect(logout_url)
+    else:
+        response = basic_logout(request)
+    
+    response.delete_cookie('logout_reason')
+    return response
 
 
 @login_required
@@ -118,7 +122,6 @@ def switch_region(request, region_name, redirect_field_name=REDIRECT_FIELD_NAME)
 def authtoken(request):
 
     if request.method == 'POST':
-        LOG.info("Called POST for authtoken")
         
         domain, region = get_ostack_attributes(request)
         
@@ -126,14 +129,15 @@ def authtoken(request):
         if auth_form.is_valid():
         
             try:
-                LOG.debug("Calling autheticate with token")
+                if auth_form.cleaned_data['pcode']:
+                    raise KeystoneAuthException("Cannot authenticate user with token")
+                
                 user = authenticate(request=request,
                                     rawtoken=auth_form.cleaned_data['token'],
                                     auth_url=region)
             
                 auth_login(request, user)
                 if request.user.is_authenticated():
-                    LOG.debug('User autheticated %s' % request.user.username)
                     set_session_from_user(request, request.user)
                 
                     default_region = (settings.OPENSTACK_KEYSTONE_URL, "Default Region")
@@ -148,19 +152,16 @@ def authtoken(request):
                     # TODO protocol SAML2 hard-coded
                     #
                     request.session['os_federation_proto'] = "SAML2"
-                else:
-                    LOG.debug('User not autheticated %s' % request.user.username)
-            
-                return shortcuts.redirect('/dashboard/project')
+                    
+                    return shortcuts.redirect('/dashboard/project')
                 
             except:
                 LOG.error("Failed authentication", exc_info=True)
         else:
-            #
-            # TODO handle error
-            #
             LOG.error("Authetication form is not valid")
-        
-    return shortcuts.redirect('/dashboard')
+    
+    response = shortcuts.redirect('/dashboard')
+    response.set_cookie('logout_reason', 'User invalid or not authenticated')
+    return response
 
 

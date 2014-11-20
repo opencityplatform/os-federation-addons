@@ -35,6 +35,7 @@ html_template = '''<html>
     </noscript>
     
     <form method="POST" action="%(url)s">
+      <input type="hidden" name="pcode" value="%(pcode)d"/>
       <input type="hidden" name="token" value="%(token)s"/>
       <noscript>
         <div><input type="submit" value="Continue"/></div>
@@ -53,21 +54,26 @@ class TokenWrapperMiddleware(wsgi.Middleware):
         querystr = dict(six.iteritems(request.params))
         if 'return' in querystr:
             res_headers = dict(six.iteritems(response.headers))
-                            
-            LOG.info(response.body)
-
+            
+            response.content_type = 'text/html'
+            response.charset = 'UTF-8'
+            
             if 'X-Subject-Token' in res_headers:
                 
-                response.content_type = 'text/html'
-                response.charset = 'UTF-8'
                 response.text = html_template % {
                     'url' : querystr['return'], 
+                    'pcode' : 0,
                     'token' : res_headers['X-Subject-Token'],
-                    'user' : request.environ.get('eppn', 'Unknown')
+                    'user' : request.environ.get('REMOTE_USER', 'Unknown')
                 }
                 
             else:
-                LOG.error('Cannot find token in response')
+                response.text = html_template % {
+                    'url' : querystr['return'], 
+                    'pcode' : 1,
+                    'token' : '',
+                    'user' : request.environ.get('REMOTE_USER', 'Unknown')
+                }
 
         return response
 
